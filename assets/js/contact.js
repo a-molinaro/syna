@@ -1,7 +1,7 @@
 import $ from './helpers/jq-helpers';
 import Validator from 'form-validator-simple';
 
-(function() {
+(function () {
   if ($('.g-recaptcha')) {
     checkReCaptcha();
   }
@@ -12,12 +12,12 @@ const validatorConfig = {
   onFormValidate: (isFormValid, form) => {
     form.querySelector('button.submit-btn').disabled = !isFormValid;
   },
-  onError: function(e, form) {
+  onError: function (e, form) {
     $(`form[id=${form.getAttribute('id')}] .generic-error`).removeClass(
       'd-none',
     );
   },
-  onSuccess: function(e, form) {
+  onSuccess: function (e, form) {
     if (form.dataset.hasNetlify) {
       return;
     }
@@ -38,12 +38,15 @@ const validatorConfig = {
       return false;
     }
 
-    $form
-      .$('button.submit-btn')
-      .attr('disabled', true)
-      .addClass('disabled');
-    $.post(action, serializedForm, {
-      contentType: 'application/x-www-form-urlencoded',
+    $form.$('button.submit-btn').attr('disabled', true).addClass('disabled');
+
+    fetch(action, {
+      mode: 'no-cors',
+      method: 'POST',
+      body: serializedForm,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     })
       .then(() => {
         genericSuccess.removeClass('hidden');
@@ -61,7 +64,6 @@ const validatorConfig = {
           .removeAttr('disabled')
           .removeClass('disabled');
       });
-
     return false;
   },
 };
@@ -71,10 +73,9 @@ document.querySelectorAll('form.contact').forEach((form) => {
   $(form)
     .$('#generic-success [data-action="return-form"]')
     .on('click', () => {
-      $(form)
-        .$('#generic-success')
-        .addClass('hidden');
+      $(form).$('#generic-success').addClass('hidden');
       $(form).removeClass('success');
+      $(form)[0].reset();
     });
 });
 
@@ -92,29 +93,27 @@ function checkReCaptcha() {
   }
 }
 
-window.onContactCaptcha = function($form) {
+window.onContactCaptcha = function ($form) {
   var customEvent = document.createEvent('Event');
   customEvent.initEvent('submit', true, true);
   document.querySelector('form.contact').dispatchEvent(customEvent);
 };
 
-window.syna.stream.subscribe('contact:update', function({
-  name,
-  email,
-  phone,
-  message,
-}) {
-  const form = $('form.contact');
-  form
-    .$('input[name=name]')
-    .attr('value', name || null)[0]
-    .focus();
-  // TODO: REVISIT: Remove the following line whenever firefox fixes center on focus
-  form[0].scrollIntoView({ behavior: 'instant', block: 'center' });
-  form.$('input[name=email]').attr('value', email || null);
-  form.$('input[name=phone]').attr('value', phone || null);
-  form.$('textarea[name=message]').$nodes.forEach((node) => {
-    node.innerHTML = '';
-    node.appendChild(document.createTextNode(message || ''));
-  });
-});
+window.syna.stream.subscribe(
+  'contact:update',
+  function ({ name, email, phone, message }) {
+    const form = $('form.contact');
+    form
+      .$('input[name=name]')
+      .attr('value', name || null)[0]
+      .focus();
+    // TODO: REVISIT: Remove the following line whenever firefox fixes center on focus
+    form[0].scrollIntoView({ behavior: 'instant', block: 'center' });
+    form.$('input[name=email]').attr('value', email || null);
+    form.$('input[name=phone]').attr('value', phone || null);
+    form.$('textarea[name=message]').$nodes.forEach((node) => {
+      node.innerHTML = '';
+      node.appendChild(document.createTextNode(message || ''));
+    });
+  },
+);
